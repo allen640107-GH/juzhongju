@@ -15,7 +15,7 @@ import {
   undoTurn,
   xiangqiTargets,
 } from "./game.js";
-import { createStage } from "./board.js";
+import { createStage } from "./scene.js";
 import { playCue, setSoundEnabled } from "./sound.js";
 import { C, RED, pieceSide, pieceType } from "./xiangqi.js";
 

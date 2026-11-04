@@ -18,7 +18,8 @@ body {
   overflow: hidden;
   color: #f3ead6;
   font-family: "PingFang TC", "Microsoft JhengHei", "PMingLiU", "Songti TC", serif;
-  background: #c4a36a;
+  background:
+    radial-gradient(ellipse at 50% 42%, #3a2432 0%, #161018 48%, #09070c 100%);
 }
 
 button, label { font: inherit; }
@@ -38,26 +39,17 @@ button, label { font: inherit; }
 .board-frame {
   position: fixed;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding:
-    calc(48px + env(safe-area-inset-top))
-    6px
-    calc(12px + env(safe-area-inset-bottom));
+  background: #120c14;
 }
 
 #board {
   position: absolute;
-  left: 6px;
-  right: 6px;
-  top: calc(48px + env(safe-area-inset-top));
-  bottom: calc(12px + env(safe-area-inset-bottom));
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
   background: transparent;
-  touch-action: manipulation;
+  touch-action: none;
 }
 
 #xq-board {
@@ -314,7 +306,6 @@ dialog form { margin-top: 10px; text-align: center; }
 button:disabled { opacity: 0.45; cursor: default; }
 
 @media (max-width: 430px) {
-  #board { top: calc(50px + env(safe-area-inset-top)); }
   .status { padding: 6px 10px; font-size: 13px; }
   .tools { flex-wrap: nowrap; gap: 4px; max-width: none; }
   .tools button { padding: 0 7px; font-size: 12px; }

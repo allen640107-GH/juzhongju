@@ -17,18 +17,18 @@ const MARGIN = 0.95;
 const BOARD_W = 8 * S + MARGIN * 2;
 const BOARD_D = 9 * S + MARGIN * 2;
 const BANQI_S = 1.15;
-const HOME_YAW = 0.18;
-const HOME_PITCH = 0.84;
+const HOME_YAW = 0;
+const HOME_PITCH = 0.7;
 const PAD_HOME = 0.965;
 const ART_NAME = ["king", "advisor", "elephant", "horse", "chariot", "cannon", "soldier"];
-const CARD_H = [1.08, 1.02, 0.9, 1.04, 0.88, 0.94, 0.86];
-const CARD_MAX_W = 0.76;
-const BOARD_FACE = "assets/board/sand-face.jpg";
-const BOARD_GROUND = "assets/board/sand-ground.jpg";
-const BOARD_SKY = "assets/board/sand-sky.jpg";
+const CARD_H = [1.32, 1.2, 1.08, 1.26, 1.08, 1.14, 1.0];
+const CARD_MAX_W = 0.88;
+const BOARD_FACE = "assets/board/face.jpg";
+const BOARD_FRAME = "assets/board/table.jpg";
+const STAGE = 0x120c14;
 
 function squareToWorld(file, rank) {
-  return new THREE.Vector3((file - 4) * S, 0, (rank - 4.5) * S);
+  return new THREE.Vector3((file - 4) * S, 0.028, (rank - 4.5) * S);
 }
 
 function worldToSquare(point) {
@@ -39,7 +39,7 @@ function worldToSquare(point) {
 }
 
 function banqiToWorld(x, y) {
-  return new THREE.Vector3((x - (COLS - 1) / 2) * BANQI_S, 0, (y - (ROWS - 1) / 2) * BANQI_S);
+  return new THREE.Vector3((x - (COLS - 1) / 2) * BANQI_S, 0.028, (y - (ROWS - 1) / 2) * BANQI_S);
 }
 
 function worldToBanqi(point) {
@@ -146,6 +146,22 @@ function boardTexture(wood) {
   canvas.height = Math.round(1400 * (BOARD_D / BOARD_W));
   const g = canvas.getContext("2d");
   paintCover(g, wood, canvas.width, canvas.height);
+  g.globalCompositeOperation = "multiply";
+  g.fillStyle = "#e4b56a";
+  g.fillRect(0, 0, canvas.width, canvas.height);
+  g.globalCompositeOperation = "source-over";
+  const vignette = g.createRadialGradient(
+    canvas.width / 2,
+    canvas.height / 2,
+    canvas.width * 0.18,
+    canvas.width / 2,
+    canvas.height / 2,
+    canvas.width * 0.72,
+  );
+  vignette.addColorStop(0, "rgba(255, 226, 176, 0.1)");
+  vignette.addColorStop(1, "rgba(92, 44, 16, 0.38)");
+  g.fillStyle = vignette;
+  g.fillRect(0, 0, canvas.width, canvas.height);
   const w = canvas.width;
   const h = canvas.height;
   const xOf = (file) => ((MARGIN + file * S) / BOARD_W) * w;
@@ -213,7 +229,17 @@ function boardTexture(wood) {
   star(8, 3, true, false);
   star(8, 6, true, false);
 
-  g.fillStyle = "rgba(58, 32, 16, 0.78)";
+  const bx = xOf(0) - 22;
+  const by = yOf(0) - 22;
+  const bw = xOf(8) - xOf(0) + 44;
+  const bh = yOf(9) - yOf(0) + 44;
+  g.lineWidth = 11;
+  g.strokeStyle = ink;
+  g.strokeRect(bx, by, bw, bh);
+  g.lineWidth = 3;
+  g.strokeRect(bx + 16, by + 16, bw - 32, bh - 32);
+
+  g.fillStyle = "rgba(58, 32, 16, 0.82)";
   g.font = "700 52px KaiTi, DFKai-SB, PMingLiU, serif";
   g.textAlign = "center";
   g.textBaseline = "middle";
@@ -484,19 +510,15 @@ function makePiece(type, side, covered, libs, labels, art) {
 export async function createStage(canvas, { onPick, onCue }) {
   const art = await loadArt();
   const wood = await loadImage(BOARD_FACE);
-  const groundMap = await loadTexture(BOARD_GROUND);
-  const skyMap = await loadTexture(BOARD_SKY);
-  groundMap.wrapS = THREE.RepeatWrapping;
-  groundMap.wrapT = THREE.RepeatWrapping;
-  groundMap.repeat.set(5, 5);
+  const frameMap = await loadTexture(BOARD_FRAME);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setClearColor(0xd2ae74, 1);
+  renderer.setClearColor(STAGE, 1);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.92;
+  renderer.toneMappingExposure = 1.18;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 80);
@@ -512,25 +534,19 @@ export async function createStage(canvas, { onPick, onCue }) {
   let quality = true;
   let mode = "xiangqi";
 
-  scene.fog = new THREE.Fog(0xd2ae74, 36, 150);
-  const sky = new THREE.Mesh(
-    new THREE.PlaneGeometry(240, 110),
-    new THREE.MeshBasicMaterial({ map: skyMap }),
-  );
-  sky.position.set(0, 24, -96);
-  scene.add(sky);
+  scene.fog = new THREE.Fog(STAGE, 42, 96);
   const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(260, 260),
-    new THREE.MeshStandardMaterial({ map: groundMap, roughness: 0.96, metalness: 0 }),
+    new THREE.PlaneGeometry(400, 400),
+    new THREE.MeshStandardMaterial({ color: STAGE, roughness: 1, metalness: 0 }),
   );
   floor.rotation.x = -Math.PI / 2;
-  floor.position.y = -0.04;
+  floor.position.y = -0.4;
   floor.receiveShadow = true;
   scene.add(floor);
 
-  const hemi = new THREE.HemisphereLight(0xffe6c2, 0xc49255, 0.9);
-  const key = new THREE.DirectionalLight(0xfff0d0, 1.25);
-  key.position.set(5, 14, 8);
+  const hemi = new THREE.HemisphereLight(0xffe8cc, 0x2a1c22, 0.8);
+  const key = new THREE.DirectionalLight(0xfff3dc, 1.45);
+  key.position.set(1.5, 22, 7);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
   key.shadow.camera.near = 2;
@@ -540,7 +556,7 @@ export async function createStage(canvas, { onPick, onCue }) {
   key.shadow.camera.top = 10;
   key.shadow.camera.bottom = -10;
   key.shadow.bias = -0.0004;
-  const fill = new THREE.DirectionalLight(0x9eb4d0, 0.45);
+  const fill = new THREE.DirectionalLight(0xc4b4a4, 0.28);
   fill.position.set(-7, 6, -5);
   const flash = new THREE.PointLight(0xffb060, 0, 5, 2);
   scene.add(hemi, key, fill, flash);
@@ -566,10 +582,13 @@ export async function createStage(canvas, { onPick, onCue }) {
     map: boardTexture(wood),
     roughness: 0.92,
     metalness: 0,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2,
   });
   const xiangqiFace = new THREE.Mesh(new THREE.PlaneGeometry(BOARD_W, BOARD_D), faceMat);
   xiangqiFace.rotation.x = -Math.PI / 2;
-  xiangqiFace.position.y = 0.012;
+  xiangqiFace.position.y = 0.028;
   xiangqiFace.receiveShadow = true;
   xiangqiFace.userData.surface = "xiangqi";
 
@@ -580,11 +599,28 @@ export async function createStage(canvas, { onPick, onCue }) {
     new THREE.MeshStandardMaterial({ map: banqiTexture(wood), roughness: 0.72 }),
   );
   banqiFace.rotation.x = -Math.PI / 2;
-  banqiFace.position.y = 0.012;
+  banqiFace.position.y = 0.028;
   banqiFace.receiveShadow = true;
   banqiFace.userData.surface = "banqi";
   banqiFace.visible = false;
-  scene.add(xiangqiFace, banqiFace);
+  const frameMat = new THREE.MeshStandardMaterial({
+    map: frameMap,
+    color: 0xd8c4b0,
+    roughness: 0.55,
+    metalness: 0.05,
+  });
+  const slab = (w, d) => {
+    const thick = 0.16;
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, thick, d), frameMat);
+    mesh.position.y = -thick / 2;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    return mesh;
+  };
+  const xiangqiFrame = slab(BOARD_W + 0.5, BOARD_D + 0.5);
+  const banqiFrame = slab(banqiW + 0.46, banqiD + 0.46);
+  banqiFrame.visible = false;
+  scene.add(xiangqiFace, banqiFace, xiangqiFrame, banqiFrame);
 
   const pieceRoot = new THREE.Group();
   const markerRoot = new THREE.Group();
@@ -608,6 +644,13 @@ export async function createStage(canvas, { onPick, onCue }) {
     });
   }
 
+  function pitchForFrame() {
+    const aspect = (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1);
+    if (aspect < 0.85) return 1.15;
+    if (aspect > 1.25) return HOME_PITCH;
+    return 0.9;
+  }
+
   function applyCamera() {
     const cp = Math.cos(pitch);
     camera.position.set(
@@ -619,8 +662,8 @@ export async function createStage(canvas, { onPick, onCue }) {
   }
 
   function boardSpan() {
-    if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 1.2 };
-    return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 1.2 };
+    if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 0.62 };
+    return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 0.48 };
   }
 
   const fitPoint = new THREE.Vector3();
@@ -640,7 +683,9 @@ export async function createStage(canvas, { onPick, onCue }) {
           fitPoint.set(x, y, z);
           if (fitPoint.clone().sub(camera.position).dot(fitForward) < 0.2) ok = false;
           const projected = fitPoint.clone().project(camera);
-          if (Math.abs(projected.x) > fitPad || Math.abs(projected.y) > fitPad) ok = false;
+          const slack = fitPad / PAD_HOME;
+          if (Math.abs(projected.x) > 0.96 * slack) ok = false;
+          if (projected.y < -0.9 * slack || projected.y > 0.8 * slack) ok = false;
         }
       }
     }
@@ -649,7 +694,7 @@ export async function createStage(canvas, { onPick, onCue }) {
   }
 
   function applyFit() {
-    look.set(0, 0, 0);
+    look.set(0, 0.08, 0);
     let lo = 4;
     let hi = 64;
     if (!inside(hi)) {
@@ -679,7 +724,7 @@ export async function createStage(canvas, { onPick, onCue }) {
     const m = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 28), mat);
     m.rotation.x = -Math.PI / 2;
     m.position.copy(pos);
-    m.position.y = 0.03;
+    m.position.y = 0.04;
     markerRoot.add(m);
   }
 
@@ -731,6 +776,8 @@ export async function createStage(canvas, { onPick, onCue }) {
     const xiangqiOn = mode === "xiangqi";
     xiangqiFace.visible = xiangqiOn;
     banqiFace.visible = !xiangqiOn;
+    xiangqiFrame.visible = xiangqiOn;
+    banqiFrame.visible = !xiangqiOn;
     clearPieces();
     clearMarkers();
     if (xiangqiOn) {
@@ -969,11 +1016,12 @@ export async function createStage(canvas, { onPick, onCue }) {
 
   function faceSide(side, instant) {
     const goalYaw = side === RED ? HOME_YAW : Math.PI - HOME_YAW;
+    const goalPitch = pitchForFrame();
     look.set(0, 0, 0);
     if (instant) {
       cancelCamera();
       yaw = goalYaw;
-      pitch = HOME_PITCH;
+      pitch = goalPitch;
       zoom = 1;
       fitPad = PAD_HOME;
       applyFit();
@@ -986,7 +1034,7 @@ export async function createStage(canvas, { onPick, onCue }) {
     tween(700, (e) => {
       if (gen !== camGen) return;
       yaw = fromYaw + delta * e;
-      pitch = fromPitch + (HOME_PITCH - fromPitch) * e;
+      pitch = fromPitch + (goalPitch - fromPitch) * e;
       look.set(0, 0, 0);
       applyFit();
     }, true);
@@ -1008,6 +1056,7 @@ export async function createStage(canvas, { onPick, onCue }) {
     renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(1, h);
     camera.updateProjectionMatrix();
+    if (!down) pitch = pitchForFrame();
     applyFit();
   }
 

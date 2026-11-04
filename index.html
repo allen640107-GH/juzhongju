@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>橘中局</title>
     <link rel="icon" href="favicon.svg" />
-    <link rel="stylesheet" href="vendor/xiangqiboard.css" />
-    <link rel="stylesheet" href="css/style.css?v=12" />
+    <link rel="stylesheet" href="css/style.css?v=13" />
   </head>
   <body>
     <p id="boot-warn" class="boot-warn">這個畫面還不能下。請改雙擊「啟動.bat」，它會用 Chrome 或 Edge 打開。</p>
 
     <div class="board-frame">
-      <div id="board" class="board"></div>
+      <canvas id="board" class="board"></canvas>
       <p id="seal" class="seal" hidden>紅勝</p>
     </div>
 
@@ -58,7 +57,7 @@
       </fieldset>
       <fieldset class="checks">
         <legend>畫面</legend>
-        <label><input id="opt-label" type="checkbox" checked /> 棋子標字</label>
+        <label><input id="opt-label" type="checkbox" /> 棋子標字</label>
         <label><input id="opt-closeup" type="checkbox" checked /> 吃子加重</label>
         <label><input id="opt-fast" type="checkbox" /> 動畫加快</label>
         <label><input id="opt-lite" type="checkbox" /> 省電畫質</label>
@@ -98,9 +97,7 @@
       <form method="dialog"><button type="submit">知道了</button></form>
     </dialog>
 
-    <script src="vendor/jquery.min.js"></script>
-    <script src="vendor/xiangqiboard.js"></script>
-    <script src="js/play.js?v=10"></script>
+    <script src="js/play.js?v=14"></script>
     <script>
       if (document.body.dataset.ready === "1") {
         document.getElementById("boot-warn").hidden = true;

@@ -6,5 +6,8 @@
   "scripts": {
     "test": "node tools/selftest.mjs",
     "build": "esbuild js/main.js --bundle --format=iife --outfile=js/play.js"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
   }
 }
