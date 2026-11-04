@@ -21705,10 +21705,11 @@ void main() {
   var BOARD_D = 9 * S + MARGIN * 2;
   var BANQI_S = 1.15;
   var HOME_YAW = 0.18;
-  var HOME_PITCH = 0.92;
+  var HOME_PITCH = 0.84;
+  var PAD_HOME = 0.965;
   var ART_NAME = ["king", "advisor", "elephant", "horse", "chariot", "cannon", "soldier"];
-  var CARD_H = [1.16, 1.1, 1.14, 1.12, 1.02, 0.96, 1.06];
-  var CARD_MAX_W = 0.88;
+  var CARD_H = [1.08, 1.02, 0.9, 1.04, 0.88, 0.94, 0.86];
+  var CARD_MAX_W = 0.76;
   var BOARD_FACE = "assets/board/sand-face.jpg";
   var BOARD_GROUND = "assets/board/sand-ground.jpg";
   var BOARD_SKY = "assets/board/sand-sky.jpg";
@@ -21779,10 +21780,13 @@ void main() {
           [RED, "red"],
           [1, "black"]
         ]) {
-          const image = await loadImage(`assets/pieces/art/${folder}/${name}.png`);
+          const image = await loadImage(`assets/pieces/art/${folder}/${name}.png?v=q3`);
           const tex = new Texture(image);
           tex.colorSpace = SRGBColorSpace;
           tex.anisotropy = 8;
+          tex.magFilter = LinearFilter;
+          tex.minFilter = LinearMipmapLinearFilter;
+          tex.generateMipmaps = true;
           tex.needsUpdate = true;
           const aspect2 = image.width / Math.max(1, image.height);
           let height = CARD_H[type];
@@ -21882,13 +21886,13 @@ void main() {
     star(8, 3, true, false);
     star(8, 6, true, false);
     g.fillStyle = "rgba(58, 32, 16, 0.78)";
-    g.font = "700 72px KaiTi, DFKai-SB, PMingLiU, serif";
+    g.font = "700 52px KaiTi, DFKai-SB, PMingLiU, serif";
     g.textAlign = "center";
     g.textBaseline = "middle";
     const riverY = (yOf(4) + yOf(5)) / 2;
     g.fillText("\u695A\u6CB3", (xOf(0) + xOf(3)) / 2, riverY);
     g.fillText("\u6F22\u754C", (xOf(5) + xOf(8)) / 2, riverY);
-    g.font = "600 28px KaiTi, DFKai-SB, PMingLiU, serif";
+    g.font = "600 20px KaiTi, DFKai-SB, PMingLiU, serif";
     const redNum = ["\u4E5D", "\u516B", "\u4E03", "\u516D", "\u4E94", "\u56DB", "\u4E09", "\u4E8C", "\u4E00"];
     for (let file = 0; file < 9; file++) {
       g.fillText(String(file + 1), xOf(file), yOf(0) - 36);
@@ -22098,7 +22102,7 @@ void main() {
       const mat = new MeshBasicMaterial({
         map: card.tex,
         transparent: true,
-        alphaTest: 0.2,
+        alphaTest: 0.05,
         side: DoubleSide
       });
       mat.userData.owned = true;
@@ -22126,8 +22130,8 @@ void main() {
     }
     const glyph = covered ? "\u6A58" : GLYPH[side === RED ? type + 1 : type + 1 + 7];
     const sprite = new Sprite(labels.get(glyph, kit.label));
-    sprite.position.y = covered ? 0.95 : cardH + 0.1;
-    sprite.scale.set(0.34, 0.34, 1);
+    sprite.position.y = covered ? 0.95 : cardH + 0.02;
+    sprite.scale.set(0.2, 0.2, 1);
     sprite.name = "label";
     root.add(sprite);
     root.userData.side = side;
@@ -22160,7 +22164,7 @@ void main() {
     let pitch = HOME_PITCH;
     let dist = 18;
     let zoom = 1;
-    let fitPad = 0.88;
+    let fitPad = PAD_HOME;
     let speedMul = 1;
     let labelsOn = true;
     let closeup = true;
@@ -22263,8 +22267,8 @@ void main() {
       camera.lookAt(look);
     }
     function boardSpan() {
-      if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 1.25 };
-      return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 1.35 };
+      if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 1.2 };
+      return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 1.2 };
     }
     const fitPoint = new Vector3();
     const fitForward = new Vector3();
@@ -22508,7 +22512,7 @@ void main() {
       onCue?.({ kind: "move", type: kind, capture, cannon, voice: !capture || !!cannon });
       let hitSent = false;
       let dustMark = 0;
-      const padHome = 0.88;
+      const padHome = PAD_HOME;
       await tween(dur, (_e, u) => {
         const pose = travelPose(kind, u, capture);
         const along = ease(u);
@@ -22547,7 +22551,7 @@ void main() {
           if (u < 0.2) k = u / 0.2;
           else if (u > 0.78) k = Math.max(0, 1 - (u - 0.78) / 0.22);
           else k = 1;
-          fitPad = padHome + 0.08 * k;
+          fitPad = padHome + 0.02 * k;
           applyFit();
         }
         if (capture && !hitSent && u > (cannon ? 0.64 : 0.8)) {
@@ -22601,7 +22605,7 @@ void main() {
         yaw = goalYaw;
         pitch = HOME_PITCH;
         zoom = 1;
-        fitPad = 0.88;
+        fitPad = PAD_HOME;
         applyFit();
         return;
       }
@@ -22669,7 +22673,7 @@ void main() {
       }
       down = { x: event.clientX, y: event.clientY, yaw, pitch, moved: false };
       cancelCamera();
-      fitPad = 0.88;
+      fitPad = PAD_HOME;
       onCue?.({ kind: "unlock" });
       canvas2.classList.add("dragging");
     });

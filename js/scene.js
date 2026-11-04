@@ -18,10 +18,11 @@ const BOARD_W = 8 * S + MARGIN * 2;
 const BOARD_D = 9 * S + MARGIN * 2;
 const BANQI_S = 1.15;
 const HOME_YAW = 0.18;
-const HOME_PITCH = 0.92;
+const HOME_PITCH = 0.84;
+const PAD_HOME = 0.965;
 const ART_NAME = ["king", "advisor", "elephant", "horse", "chariot", "cannon", "soldier"];
-const CARD_H = [1.16, 1.1, 1.14, 1.12, 1.02, 0.96, 1.06];
-const CARD_MAX_W = 0.88;
+const CARD_H = [1.08, 1.02, 0.9, 1.04, 0.88, 0.94, 0.86];
+const CARD_MAX_W = 0.76;
 const BOARD_FACE = "assets/board/sand-face.jpg";
 const BOARD_GROUND = "assets/board/sand-ground.jpg";
 const BOARD_SKY = "assets/board/sand-sky.jpg";
@@ -101,10 +102,13 @@ async function loadArt() {
         [RED, "red"],
         [1, "black"],
       ]) {
-        const image = await loadImage(`assets/pieces/art/${folder}/${name}.png`);
+        const image = await loadImage(`assets/pieces/art/${folder}/${name}.png?v=q3`);
         const tex = new THREE.Texture(image);
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.anisotropy = 8;
+        tex.magFilter = THREE.LinearFilter;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.generateMipmaps = true;
         tex.needsUpdate = true;
         const aspect = image.width / Math.max(1, image.height);
         let height = CARD_H[type];
@@ -210,14 +214,14 @@ function boardTexture(wood) {
   star(8, 6, true, false);
 
   g.fillStyle = "rgba(58, 32, 16, 0.78)";
-  g.font = "700 72px KaiTi, DFKai-SB, PMingLiU, serif";
+  g.font = "700 52px KaiTi, DFKai-SB, PMingLiU, serif";
   g.textAlign = "center";
   g.textBaseline = "middle";
   const riverY = (yOf(4) + yOf(5)) / 2;
   g.fillText("楚河", (xOf(0) + xOf(3)) / 2, riverY);
   g.fillText("漢界", (xOf(5) + xOf(8)) / 2, riverY);
 
-  g.font = "600 28px KaiTi, DFKai-SB, PMingLiU, serif";
+  g.font = "600 20px KaiTi, DFKai-SB, PMingLiU, serif";
   const redNum = ["九", "八", "七", "六", "五", "四", "三", "二", "一"];
   for (let file = 0; file < 9; file++) {
     g.fillText(String(file + 1), xOf(file), yOf(0) - 36);
@@ -437,7 +441,7 @@ function makePiece(type, side, covered, libs, labels, art) {
     const mat = new THREE.MeshBasicMaterial({
       map: card.tex,
       transparent: true,
-      alphaTest: 0.2,
+      alphaTest: 0.05,
       side: THREE.DoubleSide,
     });
     mat.userData.owned = true;
@@ -465,8 +469,8 @@ function makePiece(type, side, covered, libs, labels, art) {
   }
   const glyph = covered ? "橘" : GLYPH[side === RED ? type + 1 : type + 1 + 7];
   const sprite = new THREE.Sprite(labels.get(glyph, kit.label));
-  sprite.position.y = covered ? 0.95 : cardH + 0.1;
-  sprite.scale.set(0.34, 0.34, 1);
+  sprite.position.y = covered ? 0.95 : cardH + 0.02;
+  sprite.scale.set(0.2, 0.2, 1);
   sprite.name = "label";
   root.add(sprite);
   root.userData.side = side;
@@ -501,7 +505,7 @@ export async function createStage(canvas, { onPick, onCue }) {
   let pitch = HOME_PITCH;
   let dist = 18;
   let zoom = 1;
-  let fitPad = 0.88;
+  let fitPad = PAD_HOME;
   let speedMul = 1;
   let labelsOn = true;
   let closeup = true;
@@ -615,8 +619,8 @@ export async function createStage(canvas, { onPick, onCue }) {
   }
 
   function boardSpan() {
-    if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 1.25 };
-    return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 1.35 };
+    if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 1.2 };
+    return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 1.2 };
   }
 
   const fitPoint = new THREE.Vector3();
@@ -876,7 +880,7 @@ export async function createStage(canvas, { onPick, onCue }) {
     onCue?.({ kind: "move", type: kind, capture, cannon, voice: !capture || !!cannon });
     let hitSent = false;
     let dustMark = 0;
-    const padHome = 0.88;
+    const padHome = PAD_HOME;
     await tween(dur, (_e, u) => {
       const pose = travelPose(kind, u, capture);
       const along = ease(u);
@@ -915,7 +919,7 @@ export async function createStage(canvas, { onPick, onCue }) {
         if (u < 0.2) k = u / 0.2;
         else if (u > 0.78) k = Math.max(0, 1 - (u - 0.78) / 0.22);
         else k = 1;
-        fitPad = padHome + 0.08 * k;
+        fitPad = padHome + 0.02 * k;
         applyFit();
       }
       if (capture && !hitSent && u > (cannon ? 0.64 : 0.8)) {
@@ -971,7 +975,7 @@ export async function createStage(canvas, { onPick, onCue }) {
       yaw = goalYaw;
       pitch = HOME_PITCH;
       zoom = 1;
-      fitPad = 0.88;
+      fitPad = PAD_HOME;
       applyFit();
       return;
     }
@@ -1045,7 +1049,7 @@ export async function createStage(canvas, { onPick, onCue }) {
     }
     down = { x: event.clientX, y: event.clientY, yaw, pitch, moved: false };
     cancelCamera();
-    fitPad = 0.88;
+    fitPad = PAD_HOME;
     onCue?.({ kind: "unlock" });
     canvas.classList.add("dragging");
   });
