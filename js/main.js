@@ -69,7 +69,7 @@ const optCloseup = document.querySelector("#opt-closeup");
 const optFast = document.querySelector("#opt-fast");
 const optLite = document.querySelector("#opt-lite");
 const optSpin = document.querySelector("#opt-spin");
-optLabel.checked = prefs.labelStyle === 2 && prefs.labels === true;
+optLabel.checked = prefs.labelStyle === 3 ? prefs.labels !== false : true;
 optCloseup.checked = prefs.closeup !== false;
 optFast.checked = !!prefs.fast;
 optLite.checked = !!prefs.lite;
@@ -80,7 +80,7 @@ function savePrefs() {
     VIEW_KEY,
     JSON.stringify({
       labels: optLabel.checked,
-      labelStyle: 2,
+      labelStyle: 3,
       closeup: optCloseup.checked,
       fast: optFast.checked,
       lite: optLite.checked,

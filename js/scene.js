@@ -315,11 +315,16 @@ function lidTexture() {
   g.beginPath();
   g.arc(128, 128, 120, 0, Math.PI * 2);
   g.fill();
-  g.fillStyle = "#7a2e12";
-  g.font = "700 140px KaiTi, PMingLiU, serif";
-  g.textAlign = "center";
-  g.textBaseline = "middle";
-  g.fillText("橘", 128, 138);
+  g.strokeStyle = "#8a3d16";
+  g.lineWidth = 14;
+  g.beginPath();
+  g.arc(128, 128, 86, 0, Math.PI * 2);
+  g.stroke();
+  g.strokeStyle = "#f0c48a";
+  g.lineWidth = 4;
+  g.beginPath();
+  g.arc(128, 128, 70, 0, Math.PI * 2);
+  g.stroke();
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -566,7 +571,7 @@ export async function createStage(canvas, { onPick, onCue }) {
   let zoom = 1;
   let fitPad = PAD_HOME;
   let speedMul = 1;
-  let labelsOn = false;
+  let labelsOn = true;
   let closeup = true;
   let quality = true;
   let mode = "xiangqi";
@@ -1102,7 +1107,7 @@ export async function createStage(canvas, { onPick, onCue }) {
     renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(1, h);
     camera.updateProjectionMatrix();
-    if (!down) pitch = pitchForFrame();
+    if (!gesture) pitch = pitchForFrame();
     applyFit();
   }
 
@@ -1135,49 +1140,90 @@ export async function createStage(canvas, { onPick, onCue }) {
     return cell.y * COLS + cell.x;
   }
 
-  let down = null;
+  const pointers = new Map();
+  let gesture = null;
+  const PITCH_MIN = 0.16;
+  const PITCH_MAX = 1.48;
+  const ZOOM_MIN = 0.38;
+  const ZOOM_MAX = 3.2;
+
+  function clampZoom(value) {
+    return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value));
+  }
+
   canvas.addEventListener("pointerdown", (event) => {
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     try {
       canvas.setPointerCapture(event.pointerId);
     } catch {
       /* 程式合成的點擊沒有真實指標，略過捕捉 */
     }
-    down = { x: event.clientX, y: event.clientY, yaw, pitch, moved: false };
     cancelCamera();
     fitPad = PAD_HOME;
     onCue?.({ kind: "unlock" });
     canvas.classList.add("dragging");
+    if (pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
+      gesture = {
+        kind: "pinch",
+        dist0: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+        zoom0: zoom,
+        moved: true,
+      };
+      return;
+    }
+    gesture = { kind: "orbit", x: event.clientX, y: event.clientY, yaw, pitch, moved: false };
   });
   canvas.addEventListener("pointermove", (event) => {
-    if (!down) return;
-    const dx = event.clientX - down.x;
-    const dy = event.clientY - down.y;
-    if (dx * dx + dy * dy > 16) down.moved = true;
-    if (!down.moved) return;
-    yaw = down.yaw - dx * 0.005;
-    pitch = Math.min(1.2, Math.max(0.52, down.pitch - dy * 0.004));
+    if (!pointers.has(event.pointerId) || !gesture) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (gesture.kind === "pinch" && pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      zoom = clampZoom(gesture.zoom0 * (gesture.dist0 / dist));
+      applyFit();
+      return;
+    }
+    if (gesture.kind !== "orbit") return;
+    const dx = event.clientX - gesture.x;
+    const dy = event.clientY - gesture.y;
+    if (dx * dx + dy * dy > 9) gesture.moved = true;
+    if (!gesture.moved) return;
+    yaw = gesture.yaw - dx * 0.009;
+    pitch = Math.min(PITCH_MAX, Math.max(PITCH_MIN, gesture.pitch - dy * 0.007));
     applyFit();
   });
   function endPointer(event) {
-    if (!down) return;
-    const moved = down.moved;
-    down = null;
+    const moved = gesture?.moved;
+    const kind = gesture?.kind;
+    pointers.delete(event.pointerId);
+    if (pointers.size >= 2) return;
+    if (pointers.size === 1) {
+      const left = [...pointers.values()][0];
+      gesture = { kind: "orbit", x: left.x, y: left.y, yaw, pitch, moved: true };
+      return;
+    }
+    gesture = null;
     canvas.classList.remove("dragging");
-    if (!moved) {
+    if (!moved && kind === "orbit") {
       const index = clientToIndex(event.clientX, event.clientY);
       if (index != null) onPick(index);
     }
   }
   canvas.addEventListener("pointerup", endPointer);
-  canvas.addEventListener("pointercancel", () => {
-    down = null;
-    canvas.classList.remove("dragging");
+  canvas.addEventListener("pointercancel", (event) => {
+    pointers.delete(event.pointerId);
+    if (pointers.size === 0) {
+      gesture = null;
+      canvas.classList.remove("dragging");
+    }
   });
   canvas.addEventListener(
     "wheel",
     (event) => {
       event.preventDefault();
-      zoom = Math.min(1.35, Math.max(0.78, zoom * (event.deltaY > 0 ? 1.06 : 0.94)));
+      const dy = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
+      zoom = clampZoom(zoom * Math.exp(dy * 0.0018));
       applyFit();
     },
     { passive: false },

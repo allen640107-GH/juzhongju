@@ -30370,11 +30370,16 @@ void main() {
     g.beginPath();
     g.arc(128, 128, 120, 0, Math.PI * 2);
     g.fill();
-    g.fillStyle = "#7a2e12";
-    g.font = "700 140px KaiTi, PMingLiU, serif";
-    g.textAlign = "center";
-    g.textBaseline = "middle";
-    g.fillText("\u6A58", 128, 138);
+    g.strokeStyle = "#8a3d16";
+    g.lineWidth = 14;
+    g.beginPath();
+    g.arc(128, 128, 86, 0, Math.PI * 2);
+    g.stroke();
+    g.strokeStyle = "#f0c48a";
+    g.lineWidth = 4;
+    g.beginPath();
+    g.arc(128, 128, 70, 0, Math.PI * 2);
+    g.stroke();
     const tex = new CanvasTexture(canvas2);
     tex.colorSpace = SRGBColorSpace;
     return tex;
@@ -30612,7 +30617,7 @@ void main() {
     let zoom = 1;
     let fitPad = PAD_HOME;
     let speedMul = 1;
-    let labelsOn = false;
+    let labelsOn = true;
     let closeup = true;
     let quality = true;
     let mode = "xiangqi";
@@ -31116,7 +31121,7 @@ void main() {
       renderer.setSize(w, h, false);
       camera.aspect = w / Math.max(1, h);
       camera.updateProjectionMatrix();
-      if (!down) pitch = pitchForFrame();
+      if (!gesture) pitch = pitchForFrame();
       applyFit();
     }
     const raycaster = new Raycaster();
@@ -31146,48 +31151,87 @@ void main() {
       if (cell.x < 0 || cell.x >= COLS || cell.y < 0 || cell.y >= ROWS) return null;
       return cell.y * COLS + cell.x;
     }
-    let down = null;
+    const pointers = /* @__PURE__ */ new Map();
+    let gesture = null;
+    const PITCH_MIN = 0.16;
+    const PITCH_MAX = 1.48;
+    const ZOOM_MIN = 0.38;
+    const ZOOM_MAX = 3.2;
+    function clampZoom(value) {
+      return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value));
+    }
     canvas2.addEventListener("pointerdown", (event) => {
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       try {
         canvas2.setPointerCapture(event.pointerId);
       } catch {
       }
-      down = { x: event.clientX, y: event.clientY, yaw, pitch, moved: false };
       cancelCamera();
       fitPad = PAD_HOME;
       onCue?.({ kind: "unlock" });
       canvas2.classList.add("dragging");
+      if (pointers.size >= 2) {
+        const [a, b] = [...pointers.values()];
+        gesture = {
+          kind: "pinch",
+          dist0: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+          zoom0: zoom,
+          moved: true
+        };
+        return;
+      }
+      gesture = { kind: "orbit", x: event.clientX, y: event.clientY, yaw, pitch, moved: false };
     });
     canvas2.addEventListener("pointermove", (event) => {
-      if (!down) return;
-      const dx = event.clientX - down.x;
-      const dy = event.clientY - down.y;
-      if (dx * dx + dy * dy > 16) down.moved = true;
-      if (!down.moved) return;
-      yaw = down.yaw - dx * 5e-3;
-      pitch = Math.min(1.2, Math.max(0.52, down.pitch - dy * 4e-3));
+      if (!pointers.has(event.pointerId) || !gesture) return;
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (gesture.kind === "pinch" && pointers.size >= 2) {
+        const [a, b] = [...pointers.values()];
+        const dist2 = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+        zoom = clampZoom(gesture.zoom0 * (gesture.dist0 / dist2));
+        applyFit();
+        return;
+      }
+      if (gesture.kind !== "orbit") return;
+      const dx = event.clientX - gesture.x;
+      const dy = event.clientY - gesture.y;
+      if (dx * dx + dy * dy > 9) gesture.moved = true;
+      if (!gesture.moved) return;
+      yaw = gesture.yaw - dx * 9e-3;
+      pitch = Math.min(PITCH_MAX, Math.max(PITCH_MIN, gesture.pitch - dy * 7e-3));
       applyFit();
     });
     function endPointer(event) {
-      if (!down) return;
-      const moved = down.moved;
-      down = null;
+      const moved = gesture?.moved;
+      const kind = gesture?.kind;
+      pointers.delete(event.pointerId);
+      if (pointers.size >= 2) return;
+      if (pointers.size === 1) {
+        const left = [...pointers.values()][0];
+        gesture = { kind: "orbit", x: left.x, y: left.y, yaw, pitch, moved: true };
+        return;
+      }
+      gesture = null;
       canvas2.classList.remove("dragging");
-      if (!moved) {
+      if (!moved && kind === "orbit") {
         const index = clientToIndex(event.clientX, event.clientY);
         if (index != null) onPick2(index);
       }
     }
     canvas2.addEventListener("pointerup", endPointer);
-    canvas2.addEventListener("pointercancel", () => {
-      down = null;
-      canvas2.classList.remove("dragging");
+    canvas2.addEventListener("pointercancel", (event) => {
+      pointers.delete(event.pointerId);
+      if (pointers.size === 0) {
+        gesture = null;
+        canvas2.classList.remove("dragging");
+      }
     });
     canvas2.addEventListener(
       "wheel",
       (event) => {
         event.preventDefault();
-        zoom = Math.min(1.35, Math.max(0.78, zoom * (event.deltaY > 0 ? 1.06 : 0.94)));
+        const dy = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
+        zoom = clampZoom(zoom * Math.exp(dy * 18e-4));
         applyFit();
       },
       { passive: false }
@@ -31551,7 +31595,7 @@ void main() {
   var optFast = document.querySelector("#opt-fast");
   var optLite = document.querySelector("#opt-lite");
   var optSpin = document.querySelector("#opt-spin");
-  optLabel.checked = prefs.labelStyle === 2 && prefs.labels === true;
+  optLabel.checked = prefs.labelStyle === 3 ? prefs.labels !== false : true;
   optCloseup.checked = prefs.closeup !== false;
   optFast.checked = !!prefs.fast;
   optLite.checked = !!prefs.lite;
@@ -31561,7 +31605,7 @@ void main() {
       VIEW_KEY,
       JSON.stringify({
         labels: optLabel.checked,
-        labelStyle: 2,
+        labelStyle: 3,
         closeup: optCloseup.checked,
         fast: optFast.checked,
         lite: optLite.checked,
