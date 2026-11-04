@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>橘中局</title>
+    <link rel="icon" href="favicon.svg" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <p id="boot-warn" class="boot-warn">這個畫面還不能下。請改雙擊「啟動.bat」，它會用 Chrome 或 Edge 打開。</p>
+    <header class="top">
+      <div>
+        <p class="eyebrow">一盤棋，從容下到橘盡</p>
+        <h1>橘中局</h1>
+      </div>
+      <div class="top-actions">
+        <button id="btn-sound" type="button">音效開</button>
+        <button id="btn-rules" type="button">規則</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <div class="board-frame">
+        <canvas id="board" class="board"></canvas>
+        <p id="seal" class="seal" hidden>紅勝</p>
+      </div>
+
+      <aside class="panel">
+        <p id="status" class="status" aria-live="polite">紅方走</p>
+        <p id="hintline" class="hintline"></p>
+
+        <fieldset>
+          <legend>玩法</legend>
+          <label><input type="radio" name="mode" value="xiangqi" checked /> 象棋</label>
+          <label><input type="radio" name="mode" value="banqi" /> 暗棋</label>
+        </fieldset>
+        <fieldset>
+          <legend>對手</legend>
+          <label><input type="radio" name="vs" value="ai" checked /> 人機</label>
+          <label><input type="radio" name="vs" value="human" /> 雙人同機</label>
+        </fieldset>
+        <fieldset>
+          <legend>難度</legend>
+          <label><input type="radio" name="level" value="1" /> 入門</label>
+          <label><input type="radio" name="level" value="2" checked /> 進階</label>
+          <label><input type="radio" name="level" value="3" /> 高手</label>
+        </fieldset>
+        <fieldset class="side-row">
+          <legend>執子</legend>
+          <label><input type="radio" name="side" value="0" checked /> 執紅先走</label>
+          <label><input type="radio" name="side" value="1" /> 執黑後走</label>
+        </fieldset>
+        <fieldset class="checks">
+          <legend>畫面</legend>
+          <label><input id="opt-label" type="checkbox" checked /> 棋子標字</label>
+          <label><input id="opt-closeup" type="checkbox" checked /> 吃子加重</label>
+          <label><input id="opt-fast" type="checkbox" /> 動畫加快</label>
+          <label><input id="opt-lite" type="checkbox" /> 省電畫質</label>
+          <label><input id="opt-spin" type="checkbox" /> 雙人換邊轉向</label>
+        </fieldset>
+
+        <div class="buttons">
+          <button id="btn-new" type="button">新對局</button>
+          <button id="btn-undo" type="button">悔棋</button>
+          <button id="btn-hint" type="button">提示</button>
+          <button id="btn-view" type="button">重置視角</button>
+          <button id="btn-continue" type="button" hidden>繼續上一盤</button>
+        </div>
+        <p class="help">點自己的棋子，再點亮起來的位置。拖曳可轉視角，棋盤會留在畫面中央。吃子時有撞擊和喊聲。暗棋先翻開木罩。</p>
+        <h2>棋譜</h2>
+        <ol id="record"></ol>
+      </aside>
+    </main>
+
+    <dialog id="rules">
+      <h2>橘中局規則</h2>
+      <h3>象棋</h3>
+      <ul>
+        <li>點自己的棋子再點目標。可以吃的敵子會亮紅圈，走過去會被擊碎；炮吃子時會開火。</li>
+        <li>帥、將只在九宮內直走一格。將帥同線、中間無子，這步不能走。</li>
+        <li>仕、士只在九宮內斜走一格。相、象走田字，塞象眼或要過河就不能走。</li>
+        <li>馬走日字，直的那一格被擋住就是蹩馬腿。車直線走，不能越子。</li>
+        <li>炮、砲平常直線走、不能越子；吃子時中間必須正好隔一子。</li>
+        <li>兵、卒過河前只能向前；過河後可左右，不能後退。</li>
+        <li>無子可走時，被將軍是將死，否則是困斃，都算輸。</li>
+        <li>同一局面第三次出現：只有一方步步將軍，那一方長將判負；否則和棋。六十回合沒吃子也和棋。</li>
+      </ul>
+      <h3>暗棋</h3>
+      <ul>
+        <li>32 子洗牌蓋住。每回合翻一子，或移動一枚自己已翻開的子。</li>
+        <li>先手翻到的顏色歸先手，另一色歸後手。</li>
+        <li>吃子順序：將＞士＞象＞車＞馬＞砲＞兵。同大小可互吃。馬不能吃士。兵可吃將，將不吃兵。</li>
+        <li>砲平常走一格；吃子要隔正好一子，不能吃隔壁。蓋住的子可當砲架，不能被吃。</li>
+        <li>對方無子可走或子被吃光即勝。五十步沒吃子和棋。</li>
+      </ul>
+      <form method="dialog"><button type="submit">知道了</button></form>
+    </dialog>
+
+    <script src="js/play.js?v=4"></script>
+    <script>
+      if (document.body.dataset.ready === "1") {
+        document.getElementById("boot-warn").hidden = true;
+      }
+    </script>
+  </body>
+</html>

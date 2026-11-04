@@ -1,0 +1,10 @@
+{
+  "name": "juzhong-ju",
+  "private": true,
+  "type": "module",
+  "description": "橘中局 — 可在瀏覽器下的中國象棋與暗棋",
+  "scripts": {
+    "test": "node tools/selftest.mjs",
+    "build": "esbuild js/main.js --bundle --format=iife --outfile=js/play.js"
+  }
+}
