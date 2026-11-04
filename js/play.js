@@ -30093,7 +30093,7 @@ void main() {
   var BOARD_D = 9 * S + MARGIN * 2;
   var BANQI_S = 1.15;
   var HOME_YAW = 0;
-  var HOME_PITCH = 0.7;
+  var HOME_PITCH = 0.82;
   var PAD_HOME = 0.965;
   var ART_NAME = ["king", "advisor", "elephant", "horse", "chariot", "cannon", "soldier"];
   var CARD_H = [2.05, 1.88, 1.72, 1.95, 1.62, 1.7, 1.48];
@@ -30455,11 +30455,11 @@ void main() {
     nose.castShadow = false;
     group.add(nose);
   }
-  function pedestal(kit, wood, brass) {
+  function pedestal(kit, wood, brass, neutral = false) {
     const g = new Group();
     g.add(mesh(new CylinderGeometry(0.36, 0.4, 0.1, 28), wood, 0, 0.05, 0));
     g.add(mesh(new TorusGeometry(0.345, 0.025, 8, 28), brass, 0, 0.1, 0, Math.PI / 2, 0, 0));
-    g.add(mesh(new CylinderGeometry(0.3, 0.3, 0.045, 28), kit.body, 0, 0.125, 0));
+    g.add(mesh(new CylinderGeometry(0.3, 0.3, 0.045, 28), neutral ? wood : kit.body, 0, 0.125, 0));
     return g;
   }
   function figureOf(type, kit, wood) {
@@ -30532,7 +30532,7 @@ void main() {
     let badgeZ = 0.16;
     let badgeSize = 0.74;
     if (covered) {
-      body.add(pedestal(kit, libs.wood, libs.brass));
+      body.add(pedestal(kit, libs.wood, libs.brass, true));
       const dome = mesh(new SphereGeometry(0.46, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), libs.lidMat, 0, 0.18, 0);
       dome.name = "lid";
       body.add(dome);
@@ -30575,13 +30575,15 @@ void main() {
       body.add(figureOf(type, kit, libs.wood));
       addNose(body);
     }
-    const glyph = covered ? "\u6A58" : GLYPH[side === RED ? type + 1 : type + 1 + 7];
-    const sprite = new Sprite(labels.get(glyph, side));
-    sprite.position.set(0, badgeY, badgeZ);
-    sprite.scale.set(badgeSize, badgeSize, 1);
-    sprite.renderOrder = 4;
-    sprite.name = "label";
-    badgeHost.add(sprite);
+    if (!covered) {
+      const glyph = GLYPH[side === RED ? type + 1 : type + 1 + 7];
+      const sprite = new Sprite(labels.get(glyph, side));
+      sprite.position.set(0, badgeY, badgeZ);
+      sprite.scale.set(badgeSize, badgeSize, 1);
+      sprite.renderOrder = 4;
+      sprite.name = "label";
+      badgeHost.add(sprite);
+    }
     root.userData.side = side;
     root.userData.type = type;
     root.userData.tint = covered ? 12876346 : kit.tint;
@@ -30602,7 +30604,7 @@ void main() {
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.18;
     const scene = new Scene();
-    const camera = new PerspectiveCamera(32, 1, 0.1, 80);
+    const camera = new PerspectiveCamera(42, 1, 0.1, 80);
     const look = new Vector3(0, 0, 0);
     let yaw = HOME_YAW;
     let pitch = HOME_PITCH;
@@ -30610,7 +30612,7 @@ void main() {
     let zoom = 1;
     let fitPad = PAD_HOME;
     let speedMul = 1;
-    let labelsOn = true;
+    let labelsOn = false;
     let closeup = true;
     let quality = true;
     let mode = "xiangqi";
@@ -30717,7 +30719,7 @@ void main() {
     }
     function pitchForFrame() {
       const aspect2 = (canvas2.clientWidth || 1) / Math.max(1, canvas2.clientHeight || 1);
-      if (aspect2 < 0.85) return 0.92;
+      if (aspect2 < 0.85) return 1.02;
       if (aspect2 > 1.25) return HOME_PITCH;
       return 0.9;
     }
@@ -30731,8 +30733,8 @@ void main() {
       camera.lookAt(look);
     }
     function boardSpan() {
-      if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 1.05 };
-      return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 1.45 };
+      if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 0.62 };
+      return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 0.42 };
     }
     const fitPoint = new Vector3();
     const fitForward = new Vector3();
@@ -30751,8 +30753,8 @@ void main() {
             if (fitPoint.clone().sub(camera.position).dot(fitForward) < 0.2) ok = false;
             const projected = fitPoint.clone().project(camera);
             const slack = fitPad / PAD_HOME;
-            if (Math.abs(projected.x) > 0.96 * slack) ok = false;
-            if (projected.y < -0.9 * slack || projected.y > 0.8 * slack) ok = false;
+            if (Math.abs(projected.x) > 0.99 * slack) ok = false;
+            if (projected.y < -0.97 * slack || projected.y > 0.95 * slack) ok = false;
           }
         }
       }
@@ -31185,7 +31187,7 @@ void main() {
       "wheel",
       (event) => {
         event.preventDefault();
-        zoom = Math.min(1.4, Math.max(1, zoom * (event.deltaY > 0 ? 1.06 : 0.94)));
+        zoom = Math.min(1.35, Math.max(0.78, zoom * (event.deltaY > 0 ? 1.06 : 0.94)));
         applyFit();
       },
       { passive: false }
@@ -31549,7 +31551,7 @@ void main() {
   var optFast = document.querySelector("#opt-fast");
   var optLite = document.querySelector("#opt-lite");
   var optSpin = document.querySelector("#opt-spin");
-  optLabel.checked = prefs.labels !== false;
+  optLabel.checked = prefs.labelStyle === 2 && prefs.labels === true;
   optCloseup.checked = prefs.closeup !== false;
   optFast.checked = !!prefs.fast;
   optLite.checked = !!prefs.lite;
@@ -31559,6 +31561,7 @@ void main() {
       VIEW_KEY,
       JSON.stringify({
         labels: optLabel.checked,
+        labelStyle: 2,
         closeup: optCloseup.checked,
         fast: optFast.checked,
         lite: optLite.checked,

@@ -18,7 +18,7 @@ const BOARD_W = 8 * S + MARGIN * 2;
 const BOARD_D = 9 * S + MARGIN * 2;
 const BANQI_S = 1.15;
 const HOME_YAW = 0;
-const HOME_PITCH = 0.7;
+const HOME_PITCH = 0.82;
 const PAD_HOME = 0.965;
 const ART_NAME = ["king", "advisor", "elephant", "horse", "chariot", "cannon", "soldier"];
 const CARD_H = [2.05, 1.88, 1.72, 1.95, 1.62, 1.7, 1.48];
@@ -405,11 +405,11 @@ function addNose(group) {
   group.add(nose);
 }
 
-function pedestal(kit, wood, brass) {
+function pedestal(kit, wood, brass, neutral = false) {
   const g = new THREE.Group();
   g.add(mesh(new THREE.CylinderGeometry(0.36, 0.4, 0.1, 28), wood, 0, 0.05, 0));
   g.add(mesh(new THREE.TorusGeometry(0.345, 0.025, 8, 28), brass, 0, 0.1, 0, Math.PI / 2, 0, 0));
-  g.add(mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.045, 28), kit.body, 0, 0.125, 0));
+  g.add(mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.045, 28), neutral ? wood : kit.body, 0, 0.125, 0));
   return g;
 }
 
@@ -484,7 +484,7 @@ function makePiece(type, side, covered, libs, labels, art) {
   let badgeZ = 0.16;
   let badgeSize = 0.74;
   if (covered) {
-    body.add(pedestal(kit, libs.wood, libs.brass));
+    body.add(pedestal(kit, libs.wood, libs.brass, true));
     const dome = mesh(new THREE.SphereGeometry(0.46, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), libs.lidMat, 0, 0.18, 0);
     dome.name = "lid";
     body.add(dome);
@@ -527,13 +527,15 @@ function makePiece(type, side, covered, libs, labels, art) {
     body.add(figureOf(type, kit, libs.wood));
     addNose(body);
   }
-  const glyph = covered ? "橘" : GLYPH[side === RED ? type + 1 : type + 1 + 7];
-  const sprite = new THREE.Sprite(labels.get(glyph, side));
-  sprite.position.set(0, badgeY, badgeZ);
-  sprite.scale.set(badgeSize, badgeSize, 1);
-  sprite.renderOrder = 4;
-  sprite.name = "label";
-  badgeHost.add(sprite);
+  if (!covered) {
+    const glyph = GLYPH[side === RED ? type + 1 : type + 1 + 7];
+    const sprite = new THREE.Sprite(labels.get(glyph, side));
+    sprite.position.set(0, badgeY, badgeZ);
+    sprite.scale.set(badgeSize, badgeSize, 1);
+    sprite.renderOrder = 4;
+    sprite.name = "label";
+    badgeHost.add(sprite);
+  }
   root.userData.side = side;
   root.userData.type = type;
   root.userData.tint = covered ? 0xc47a3a : kit.tint;
@@ -556,7 +558,7 @@ export async function createStage(canvas, { onPick, onCue }) {
   renderer.toneMappingExposure = 1.18;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 80);
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 80);
   const look = new THREE.Vector3(0, 0, 0);
   let yaw = HOME_YAW;
   let pitch = HOME_PITCH;
@@ -564,7 +566,7 @@ export async function createStage(canvas, { onPick, onCue }) {
   let zoom = 1;
   let fitPad = PAD_HOME;
   let speedMul = 1;
-  let labelsOn = true;
+  let labelsOn = false;
   let closeup = true;
   let quality = true;
   let mode = "xiangqi";
@@ -681,7 +683,7 @@ export async function createStage(canvas, { onPick, onCue }) {
 
   function pitchForFrame() {
     const aspect = (canvas.clientWidth || 1) / Math.max(1, canvas.clientHeight || 1);
-    if (aspect < 0.85) return 0.92;
+    if (aspect < 0.85) return 1.02;
     if (aspect > 1.25) return HOME_PITCH;
     return 0.9;
   }
@@ -697,8 +699,8 @@ export async function createStage(canvas, { onPick, onCue }) {
   }
 
   function boardSpan() {
-    if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 1.05 };
-    return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 1.45 };
+    if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 0.62 };
+    return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 0.42 };
   }
 
   const fitPoint = new THREE.Vector3();
@@ -719,8 +721,8 @@ export async function createStage(canvas, { onPick, onCue }) {
           if (fitPoint.clone().sub(camera.position).dot(fitForward) < 0.2) ok = false;
           const projected = fitPoint.clone().project(camera);
           const slack = fitPad / PAD_HOME;
-          if (Math.abs(projected.x) > 0.96 * slack) ok = false;
-          if (projected.y < -0.9 * slack || projected.y > 0.8 * slack) ok = false;
+          if (Math.abs(projected.x) > 0.99 * slack) ok = false;
+          if (projected.y < -0.97 * slack || projected.y > 0.95 * slack) ok = false;
         }
       }
     }
@@ -1175,7 +1177,7 @@ export async function createStage(canvas, { onPick, onCue }) {
     "wheel",
     (event) => {
       event.preventDefault();
-      zoom = Math.min(1.4, Math.max(1, zoom * (event.deltaY > 0 ? 1.06 : 0.94)));
+      zoom = Math.min(1.35, Math.max(0.78, zoom * (event.deltaY > 0 ? 1.06 : 0.94)));
       applyFit();
     },
     { passive: false },
