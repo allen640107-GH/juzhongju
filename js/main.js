@@ -15,7 +15,7 @@ import {
   undoTurn,
   xiangqiTargets,
 } from "./game.js";
-import { createStage } from "./scene.js";
+import { createStage } from "./board.js";
 import { playCue, setSoundEnabled } from "./sound.js";
 import { C, RED, pieceSide, pieceType } from "./xiangqi.js";
 
@@ -186,6 +186,21 @@ function onPick(index) {
   if (busy || state.over || isAiTurn(state)) return;
   if (state.mode === "xiangqi") pickXiangqi(index);
   else pickBanqi(index);
+}
+
+function canDrag(index) {
+  if (!state || busy || state.over || isAiTurn(state) || state.mode !== "xiangqi") return false;
+  return pieceSide(state.board[index]) === state.side;
+}
+
+function canDrop(from, to) {
+  if (!state || busy || state.over || isAiTurn(state) || state.mode !== "xiangqi") return false;
+  return xiangqiTargets(state, from).includes(to);
+}
+
+function commitDrag(from, to) {
+  selected = from;
+  pickXiangqi(to);
 }
 
 function pickXiangqi(index) {
@@ -371,7 +386,8 @@ function applyOptionsFrom(next) {
   silence = false;
 }
 
-createStage(canvas, { onPick, onCue: playCue })
+Promise.resolve()
+  .then(() => createStage(canvas, { onPick, onCue: playCue, canDrag, canDrop, commitDrag }))
   .then((ready) => {
     stage = ready;
     setSoundEnabled(soundOn);

@@ -5,79 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>橘中局</title>
     <link rel="icon" href="favicon.svg" />
-    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="vendor/xiangqiboard.css" />
+    <link rel="stylesheet" href="css/style.css?v=12" />
   </head>
   <body>
     <p id="boot-warn" class="boot-warn">這個畫面還不能下。請改雙擊「啟動.bat」，它會用 Chrome 或 Edge 打開。</p>
-    <header class="top">
-      <div>
-        <p class="eyebrow">一盤棋，從容下到橘盡</p>
-        <h1>橘中局</h1>
+
+    <div class="board-frame">
+      <div id="board" class="board"></div>
+      <p id="seal" class="seal" hidden>紅勝</p>
+    </div>
+
+    <div id="hud">
+      <div class="bar">
+        <div class="turn">
+          <p id="status" class="status" aria-live="polite">紅方走</p>
+          <p id="hintline" class="hintline"></p>
+        </div>
+        <div class="tools">
+          <button id="btn-undo" type="button">悔棋</button>
+          <button id="btn-hint" type="button">提示</button>
+          <button id="btn-view" type="button">視角</button>
+          <button id="btn-menu" type="button">選單</button>
+        </div>
       </div>
-      <div class="top-actions">
+      <button id="btn-log" type="button">棋譜</button>
+      <ol id="record" hidden></ol>
+    </div>
+
+    <dialog id="setup">
+      <h2>橘中局</h2>
+      <fieldset>
+        <legend>玩法</legend>
+        <label><input type="radio" name="mode" value="xiangqi" checked /> 象棋</label>
+        <label><input type="radio" name="mode" value="banqi" /> 暗棋</label>
+      </fieldset>
+      <fieldset>
+        <legend>對手</legend>
+        <label><input type="radio" name="vs" value="ai" checked /> 人機</label>
+        <label><input type="radio" name="vs" value="human" /> 雙人同機</label>
+      </fieldset>
+      <fieldset>
+        <legend>難度</legend>
+        <label><input type="radio" name="level" value="1" /> 入門</label>
+        <label><input type="radio" name="level" value="2" checked /> 進階</label>
+        <label><input type="radio" name="level" value="3" /> 高手</label>
+      </fieldset>
+      <fieldset class="side-row">
+        <legend>執子</legend>
+        <label><input type="radio" name="side" value="0" checked /> 執紅先走</label>
+        <label><input type="radio" name="side" value="1" /> 執黑後走</label>
+      </fieldset>
+      <fieldset class="checks">
+        <legend>畫面</legend>
+        <label><input id="opt-label" type="checkbox" checked /> 棋子標字</label>
+        <label><input id="opt-closeup" type="checkbox" checked /> 吃子加重</label>
+        <label><input id="opt-fast" type="checkbox" /> 動畫加快</label>
+        <label><input id="opt-lite" type="checkbox" /> 省電畫質</label>
+        <label><input id="opt-spin" type="checkbox" /> 雙人換邊轉向</label>
+      </fieldset>
+      <div class="buttons">
+        <button id="btn-new" type="button">新對局</button>
+        <button id="btn-continue" type="button" hidden>繼續上一盤</button>
         <button id="btn-sound" type="button">音效開</button>
         <button id="btn-rules" type="button">規則</button>
       </div>
-    </header>
-
-    <main class="layout">
-      <div class="board-frame">
-        <canvas id="board" class="board"></canvas>
-        <p id="seal" class="seal" hidden>紅勝</p>
-      </div>
-
-      <aside class="panel">
-        <p id="status" class="status" aria-live="polite">紅方走</p>
-        <p id="hintline" class="hintline"></p>
-
-        <fieldset>
-          <legend>玩法</legend>
-          <label><input type="radio" name="mode" value="xiangqi" checked /> 象棋</label>
-          <label><input type="radio" name="mode" value="banqi" /> 暗棋</label>
-        </fieldset>
-        <fieldset>
-          <legend>對手</legend>
-          <label><input type="radio" name="vs" value="ai" checked /> 人機</label>
-          <label><input type="radio" name="vs" value="human" /> 雙人同機</label>
-        </fieldset>
-        <fieldset>
-          <legend>難度</legend>
-          <label><input type="radio" name="level" value="1" /> 入門</label>
-          <label><input type="radio" name="level" value="2" checked /> 進階</label>
-          <label><input type="radio" name="level" value="3" /> 高手</label>
-        </fieldset>
-        <fieldset class="side-row">
-          <legend>執子</legend>
-          <label><input type="radio" name="side" value="0" checked /> 執紅先走</label>
-          <label><input type="radio" name="side" value="1" /> 執黑後走</label>
-        </fieldset>
-        <fieldset class="checks">
-          <legend>畫面</legend>
-          <label><input id="opt-label" type="checkbox" checked /> 棋子標字</label>
-          <label><input id="opt-closeup" type="checkbox" checked /> 吃子加重</label>
-          <label><input id="opt-fast" type="checkbox" /> 動畫加快</label>
-          <label><input id="opt-lite" type="checkbox" /> 省電畫質</label>
-          <label><input id="opt-spin" type="checkbox" /> 雙人換邊轉向</label>
-        </fieldset>
-
-        <div class="buttons">
-          <button id="btn-new" type="button">新對局</button>
-          <button id="btn-undo" type="button">悔棋</button>
-          <button id="btn-hint" type="button">提示</button>
-          <button id="btn-view" type="button">重置視角</button>
-          <button id="btn-continue" type="button" hidden>繼續上一盤</button>
-        </div>
-        <p class="help">點自己的棋子，再點亮起來的位置。拖曳可轉視角，棋盤會留在畫面中央。吃子時有撞擊和喊聲。暗棋先翻開木罩。</p>
-        <h2>棋譜</h2>
-        <ol id="record"></ol>
-      </aside>
-    </main>
+      <form method="dialog"><button type="submit">回到棋盤</button></form>
+    </dialog>
 
     <dialog id="rules">
       <h2>橘中局規則</h2>
+      <p>點自己的棋子，或把棋子拖到亮起來的位置。視角鈕可換邊看。吃子時有撞擊和喊聲。暗棋先翻開木罩。</p>
       <h3>象棋</h3>
       <ul>
-        <li>點自己的棋子再點目標。可以吃的敵子會亮紅圈，走過去會被擊碎；炮吃子時會開火。</li>
+        <li>點自己的棋子再點目標，或直接把棋子拖過去。可以吃的位置會亮起來。</li>
         <li>帥、將只在九宮內直走一格。將帥同線、中間無子，這步不能走。</li>
         <li>仕、士只在九宮內斜走一格。相、象走田字，塞象眼或要過河就不能走。</li>
         <li>馬走日字，直的那一格被擋住就是蹩馬腿。車直線走，不能越子。</li>
@@ -97,10 +98,25 @@
       <form method="dialog"><button type="submit">知道了</button></form>
     </dialog>
 
-    <script src="js/play.js?v=5"></script>
+    <script src="vendor/jquery.min.js"></script>
+    <script src="vendor/xiangqiboard.js"></script>
+    <script src="js/play.js?v=10"></script>
     <script>
       if (document.body.dataset.ready === "1") {
         document.getElementById("boot-warn").hidden = true;
+      }
+      document.querySelector("#btn-menu").addEventListener("click", () => {
+        document.querySelector("#setup").showModal();
+      });
+      document.querySelector("#btn-log").addEventListener("click", () => {
+        const list = document.querySelector("#record");
+        list.hidden = !list.hidden;
+      });
+      for (const id of ["btn-new", "btn-continue"]) {
+        document.querySelector("#" + id).addEventListener("click", () => {
+          const setup = document.querySelector("#setup");
+          if (setup.open) setup.close();
+        });
       }
     </script>
   </body>
