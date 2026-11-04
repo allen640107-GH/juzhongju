@@ -30188,7 +30188,7 @@ void main() {
           [RED, "red"],
           [1, "black"]
         ]) {
-          const image = await loadImage(`assets/pieces/art/${folder}/${name}.png?v=q3`);
+          const image = await loadImage(`assets/pieces/art/${folder}/${name}.png?v=q4`);
           const tex = new Texture(image);
           tex.colorSpace = SRGBColorSpace;
           tex.anisotropy = 8;

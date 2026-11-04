@@ -122,7 +122,7 @@ async function loadArt() {
         [RED, "red"],
         [1, "black"],
       ]) {
-        const image = await loadImage(`assets/pieces/art/${folder}/${name}.png?v=q3`);
+        const image = await loadImage(`assets/pieces/art/${folder}/${name}.png?v=q4`);
         const tex = new THREE.Texture(image);
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.anisotropy = 8;
