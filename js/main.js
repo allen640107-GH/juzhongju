@@ -345,6 +345,36 @@ document.querySelector("#btn-hint").addEventListener("click", () => {
   }, 30);
 });
 document.querySelector("#btn-view").addEventListener("click", () => stage.resetView());
+function openTable() {
+  const titleEl = document.querySelector("#title");
+  if (!titleEl || titleEl.hidden) {
+    document.body.dataset.playing = "1";
+    return;
+  }
+  titleEl.classList.add("leaving");
+  document.body.dataset.playing = "1";
+  window.setTimeout(() => {
+    titleEl.hidden = true;
+  }, 460);
+}
+document.querySelector("#title-start").addEventListener("click", () => {
+  silence = true;
+  document.querySelector('input[name=mode][value="xiangqi"]').checked = true;
+  silence = false;
+  openTable();
+  begin(makeMatch());
+});
+document.querySelector("#title-dark").addEventListener("click", () => {
+  silence = true;
+  document.querySelector('input[name=mode][value="banqi"]').checked = true;
+  silence = false;
+  openTable();
+  begin(makeMatch());
+});
+document.querySelector("#title-resume").addEventListener("click", () => {
+  openTable();
+  continueBtn.click();
+});
 continueBtn.addEventListener("click", () => {
   try {
     const next = hydrate(JSON.parse(storageGet(SAVE_KEY) || "null"));
@@ -403,8 +433,16 @@ Promise.resolve()
     stage.setCloseup(optCloseup.checked);
     stage.setSpeed(optFast.checked ? 1.8 : 1);
     stage.setQuality(!optLite.checked);
-    continueBtn.hidden = !storageGet(SAVE_KEY);
-    begin(makeMatch());
+    const saved = !!storageGet(SAVE_KEY);
+    continueBtn.hidden = !saved;
+    const titleResume = document.querySelector("#title-resume");
+    if (titleResume) titleResume.hidden = !saved;
+    const params = new URLSearchParams(location.search);
+    if (params.has("test") || params.has("play")) {
+      document.querySelector("#title").hidden = true;
+      document.body.dataset.playing = "1";
+      begin(makeMatch());
+    }
     document.body.dataset.ready = "1";
     document.getElementById("boot-warn").hidden = true;
   })

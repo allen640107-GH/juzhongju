@@ -315,3 +315,100 @@ button:disabled { opacity: 0.45; cursor: default; }
   .tools button, #btn-log { min-height: 34px; }
   dialog button, dialog label { min-height: 36px; }
 }
+
+body:not([data-playing]) #hud { display: none; }
+
+.title {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 36%, rgba(138, 42, 36, 0.42), transparent 46%),
+    radial-gradient(ellipse at 50% 72%, #2c1a22 0%, #120c12 50%, #07060a 100%);
+  color: #f6efe2;
+}
+.title[hidden] { display: none; }
+.title.leaving { opacity: 0; transition: opacity 0.45s ease; pointer-events: none; }
+.title-stage {
+  width: min(1180px, 100%);
+  display: grid;
+  grid-template-columns: 1.15fr minmax(220px, 420px) 1.15fr;
+  align-items: end;
+  gap: 4px;
+  padding: 24px 16px 32px;
+}
+.hero {
+  width: 100%;
+  height: min(70vh, 680px);
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 30px 28px rgba(0, 0, 0, 0.62));
+  pointer-events: none;
+  user-select: none;
+}
+.title-copy { text-align: center; align-self: center; padding-bottom: 6vh; }
+.eyebrow {
+  margin: 0 0 10px;
+  letter-spacing: 0.48em;
+  font-size: 13px;
+  color: #e7c48a;
+}
+.title-copy h1 {
+  margin: 0;
+  font-size: clamp(44px, 5.6vw, 84px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.05;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #fff8ec 0%, #f2d7a0 36%, #d45338 74%, #8c1c14 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 12px 18px rgba(110, 22, 16, 0.5));
+}
+.tagline {
+  margin: 14px 0 22px;
+  letter-spacing: 0.34em;
+  color: rgba(246, 232, 210, 0.76);
+  font-size: 15px;
+}
+.title-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+.title-actions button {
+  min-width: 210px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(233, 194, 122, 0.45);
+  background: rgba(16, 10, 14, 0.35);
+  color: #f6efe2;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+}
+#title-start {
+  height: 54px;
+  background: #b42318;
+  border-color: transparent;
+  color: #fffaf3;
+  font-size: 18px;
+}
+@media (max-width: 720px) {
+  .title-stage {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "copy copy"
+      "black red";
+    align-items: end;
+  }
+  .title-copy { grid-area: copy; padding-bottom: 0; }
+  .hero-black { grid-area: black; }
+  .hero-red { grid-area: red; }
+  .hero { height: 36vh; }
+  .title-copy h1 { font-size: 46px; letter-spacing: 0.08em; }
+}

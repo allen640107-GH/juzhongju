@@ -30096,8 +30096,9 @@ void main() {
   var HOME_PITCH = 0.7;
   var PAD_HOME = 0.965;
   var ART_NAME = ["king", "advisor", "elephant", "horse", "chariot", "cannon", "soldier"];
-  var CARD_H = [1.32, 1.2, 1.08, 1.26, 1.08, 1.14, 1];
-  var CARD_MAX_W = 0.88;
+  var CARD_H = [2.05, 1.88, 1.72, 1.95, 1.62, 1.7, 1.48];
+  var CARD_MAX_W = 1.28;
+  var SURFACE = 0.028;
   var BOARD_FACE = "assets/board/face.jpg";
   var BOARD_FRAME = "assets/board/table.jpg";
   var STAGE = 1182740;
@@ -30129,28 +30130,47 @@ void main() {
     return d;
   }
   function travelPose(type, u, capture) {
-    const s = Math.sin(u * Math.PI);
-    if (type === H) {
-      const gallop = Math.sin(u * Math.PI * 2);
-      return { hop: Math.abs(gallop) * (capture ? 0.62 : 0.42), rx: -gallop * 0.32, rz: Math.sin(u * Math.PI * 4) * 0.05, back: 0 };
+    const heavy = type === K || type === E || type === R || type === C;
+    let hop = 0;
+    let rx = 0;
+    let rz = 0;
+    let squat = 0;
+    let back = 0;
+    if (u < 0.18) {
+      const k = Math.sin(u / 0.18 * Math.PI);
+      squat = k * (heavy ? 0.72 : 0.42);
+      rx = squat * 0.22;
+      back = squat * 0.06;
+    } else if (u < 0.76) {
+      const k = (u - 0.18) / 0.58;
+      if (type === H) {
+        const gallop = Math.sin(k * Math.PI * 2);
+        hop = Math.abs(gallop) * (capture ? 1.05 : 0.78);
+        rx = -gallop * 0.48;
+        rz = Math.sin(k * Math.PI * 4) * 0.06;
+      } else if (type === R) {
+        const arc = Math.sin(k * Math.PI);
+        hop = arc * (capture ? 0.22 : 0.1);
+        rx = -arc * 0.08;
+        rz = Math.sin(k * 18) * 0.015;
+      } else if (type === C) {
+        const recoil = k < 0.35 ? Math.sin(k / 0.35 * Math.PI) : 0;
+        hop = Math.sin(k * Math.PI) * (capture ? 0.34 : 0.16);
+        rx = recoil * 0.5;
+        back = recoil * 0.22;
+      } else {
+        const arc = Math.sin(k * Math.PI);
+        const lift = type === E ? 0.55 : type === K ? 0.48 : type === A ? 0.5 : 0.42;
+        hop = arc * lift * (capture ? 1.28 : 1);
+        rx = -arc * (type === E ? 0.16 : 0.32);
+        rz = type === A ? Math.sin(k * Math.PI * 2) * 0.16 : 0;
+      }
+    } else {
+      const k = (u - 0.76) / 0.24;
+      squat = Math.sin(k * Math.PI) * (capture || heavy ? 0.95 : 0.58);
+      rx = squat * 0.16;
     }
-    if (type === R) {
-      return { hop: 0.04, rx: -0.05, rz: Math.sin(u * 34) * 0.02, back: 0 };
-    }
-    if (type === C) {
-      const recoil = u < 0.28 ? Math.sin(u / 0.28 * Math.PI) : 0;
-      return { hop: s * 0.06, rx: recoil * 0.42, rz: 0, back: recoil * 0.2 };
-    }
-    if (type === E) {
-      return { hop: Math.max(0, Math.sin(u * Math.PI * 2)) * 0.22, rx: 0.05, rz: 0, back: 0 };
-    }
-    if (type === K) {
-      return { hop: s * (capture ? 0.5 : 0.16), rx: -s * (capture ? 0.45 : 0.1), rz: 0, back: 0 };
-    }
-    if (type === A) {
-      return { hop: s * 0.2, rx: -s * 0.14, rz: Math.sin(u * Math.PI * 2) * 0.18, back: 0 };
-    }
-    return { hop: Math.max(0, Math.sin(u * Math.PI * 3)) * 0.16, rx: -s * 0.24, rz: 0, back: 0 };
+    return { hop, rx, rz, squat, back };
   }
   function loadImage(url) {
     return new Promise((resolve, reject) => {
@@ -30299,13 +30319,13 @@ void main() {
     g.lineWidth = 3;
     g.strokeRect(bx + 16, by + 16, bw - 32, bh - 32);
     g.fillStyle = "rgba(58, 32, 16, 0.82)";
-    g.font = "700 52px KaiTi, DFKai-SB, PMingLiU, serif";
+    g.font = "700 72px KaiTi, DFKai-SB, PMingLiU, serif";
     g.textAlign = "center";
     g.textBaseline = "middle";
     const riverY = (yOf(4) + yOf(5)) / 2;
     g.fillText("\u695A\u6CB3", (xOf(0) + xOf(3)) / 2, riverY);
     g.fillText("\u6F22\u754C", (xOf(5) + xOf(8)) / 2, riverY);
-    g.font = "600 20px KaiTi, DFKai-SB, PMingLiU, serif";
+    g.font = "600 32px KaiTi, DFKai-SB, PMingLiU, serif";
     const redNum = ["\u4E5D", "\u516B", "\u4E03", "\u516D", "\u4E94", "\u56DB", "\u4E09", "\u4E8C", "\u4E00"];
     for (let file = 0; file < 9; file++) {
       g.fillText(String(file + 1), xOf(file), yOf(0) - 36);
@@ -30359,23 +30379,29 @@ void main() {
     tex.colorSpace = SRGBColorSpace;
     return tex;
   }
-  function labelTexture(text, color) {
+  function labelTexture(text, side) {
     const canvas2 = document.createElement("canvas");
-    canvas2.width = 128;
-    canvas2.height = 128;
+    canvas2.width = 256;
+    canvas2.height = 256;
     const g = canvas2.getContext("2d");
-    g.clearRect(0, 0, 128, 128);
-    g.fillStyle = "rgba(20, 12, 8, 0.45)";
+    const red = side === RED;
+    g.clearRect(0, 0, 256, 256);
+    g.fillStyle = red ? "#f3d7a2" : "#d8d0c4";
     g.beginPath();
-    g.arc(64, 64, 52, 0, Math.PI * 2);
+    g.arc(128, 128, 120, 0, Math.PI * 2);
     g.fill();
-    g.fillStyle = color;
-    g.font = "700 78px KaiTi, DFKai-SB, PMingLiU, serif";
+    g.fillStyle = red ? "#9d1c14" : "#14110e";
+    g.beginPath();
+    g.arc(128, 128, 104, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = red ? "#f8e7b4" : "#f4efe4";
+    g.font = "700 168px KaiTi, DFKai-SB, PMingLiU, serif";
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(text, 64, 70);
+    g.fillText(text, 128, 146);
     const tex = new CanvasTexture(canvas2);
     tex.colorSpace = SRGBColorSpace;
+    tex.anisotropy = 8;
     return tex;
   }
   function mesh(geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) {
@@ -30501,12 +30527,16 @@ void main() {
     body.name = "body";
     root.add(body);
     let cardH = 1;
+    let badgeHost = body;
+    let badgeY = 0.66;
+    let badgeZ = 0.16;
+    let badgeSize = 0.74;
     if (covered) {
       body.add(pedestal(kit, libs.wood, libs.brass));
-      const dome = mesh(new SphereGeometry(0.3, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), libs.lidMat, 0, 0.14, 0);
+      const dome = mesh(new SphereGeometry(0.46, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), libs.lidMat, 0, 0.18, 0);
       dome.name = "lid";
       body.add(dome);
-      const disc = mesh(new CircleGeometry(0.22, 24), libs.lidFace, 0, 0.46, 0, -Math.PI / 2, 0, 0);
+      const disc = mesh(new CircleGeometry(0.36, 24), libs.lidFace, 0, 0.66, 0, -Math.PI / 2, 0, 0);
       disc.name = "lid";
       body.add(disc);
     } else if (art[side] && art[side][type]) {
@@ -30524,6 +30554,10 @@ void main() {
       plane.position.y = card.height / 2;
       plane.castShadow = true;
       body.add(plane);
+      badgeHost = plane;
+      badgeY = 0;
+      badgeZ = 0.16;
+      badgeSize = Math.min(0.82, card.height * 0.42);
       const shadeMat = new MeshBasicMaterial({
         color: 0,
         transparent: true,
@@ -30531,7 +30565,7 @@ void main() {
         depthWrite: false
       });
       shadeMat.userData.owned = true;
-      const shade = new Mesh(new CircleGeometry(Math.min(0.34, card.width * 0.42), 20), shadeMat);
+      const shade = new Mesh(new CircleGeometry(Math.min(0.52, card.width * 0.48), 24), shadeMat);
       shade.name = "shade";
       shade.rotation.x = -Math.PI / 2;
       shade.position.y = 0.02;
@@ -30542,11 +30576,12 @@ void main() {
       addNose(body);
     }
     const glyph = covered ? "\u6A58" : GLYPH[side === RED ? type + 1 : type + 1 + 7];
-    const sprite = new Sprite(labels.get(glyph, kit.label));
-    sprite.position.y = covered ? 0.95 : cardH + 0.02;
-    sprite.scale.set(0.2, 0.2, 1);
+    const sprite = new Sprite(labels.get(glyph, side));
+    sprite.position.set(0, badgeY, badgeZ);
+    sprite.scale.set(badgeSize, badgeSize, 1);
+    sprite.renderOrder = 4;
     sprite.name = "label";
-    root.add(sprite);
+    badgeHost.add(sprite);
     root.userData.side = side;
     root.userData.type = type;
     root.userData.tint = covered ? 12876346 : kit.tint;
@@ -30610,9 +30645,9 @@ void main() {
     libs.lidFace = new MeshStandardMaterial({ map: lidTex, roughness: 0.5 });
     const labelCache = /* @__PURE__ */ new Map();
     const labels = {
-      get(text, color) {
-        const keyName = `${color}:${text}`;
-        if (!labelCache.has(keyName)) labelCache.set(keyName, labelTexture(text, color));
+      get(text, side) {
+        const keyName = `${side}:${text}`;
+        if (!labelCache.has(keyName)) labelCache.set(keyName, labelTexture(text, side));
         return new SpriteMaterial({
           map: labelCache.get(keyName),
           transparent: true,
@@ -30682,7 +30717,7 @@ void main() {
     }
     function pitchForFrame() {
       const aspect2 = (canvas2.clientWidth || 1) / Math.max(1, canvas2.clientHeight || 1);
-      if (aspect2 < 0.85) return 1.15;
+      if (aspect2 < 0.85) return 0.92;
       if (aspect2 > 1.25) return HOME_PITCH;
       return 0.9;
     }
@@ -30696,8 +30731,8 @@ void main() {
       camera.lookAt(look);
     }
     function boardSpan() {
-      if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 0.62 };
-      return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 0.48 };
+      if (mode === "banqi") return { hw: banqiW / 2, hd: banqiD / 2, top: 1.05 };
+      return { hw: BOARD_W / 2, hd: BOARD_D / 2, top: 1.45 };
     }
     const fitPoint = new Vector3();
     const fitForward = new Vector3();
@@ -30928,7 +30963,7 @@ void main() {
       const start = meshPiece.position.clone();
       const body = meshPiece.getObjectByName("body");
       const shade = meshPiece.getObjectByName("shade");
-      const dur = (capture ? 760 : 520) * (kind === R ? 0.72 : kind === E || kind === K ? 1.15 : 1) / speedMul;
+      const dur = (capture ? 1080 : 820) * (kind === R ? 0.78 : kind === H ? 0.92 : 1) / speedMul;
       const travel = dest.clone().sub(start);
       travel.y = 0;
       if (travel.lengthSq() > 1e-4) travel.normalize();
@@ -30944,6 +30979,7 @@ void main() {
       }
       onCue?.({ kind: "move", type: kind, capture, cannon, voice: !capture || !!cannon });
       let hitSent = false;
+      let landed = false;
       let dustMark = 0;
       const padHome = PAD_HOME;
       await tween(dur, (_e, u) => {
@@ -30951,10 +30987,17 @@ void main() {
         const along = ease(u);
         meshPiece.position.lerpVectors(start, dest, along);
         meshPiece.position.addScaledVector(travel, -pose.back);
-        meshPiece.position.y = pose.hop;
+        meshPiece.position.y = SURFACE + pose.hop - pose.squat * 0.05;
         if (body) {
           body.rotation.x = pose.rx;
           body.rotation.z = pose.rz;
+          const squat = pose.squat;
+          body.scale.set(1 + squat * 0.2, Math.max(0.58, 1 - squat * 0.36), 1 + squat * 0.2);
+        }
+        if (!landed && u >= 0.78) {
+          landed = true;
+          thud(capture ? 1.2 : kind === R || kind === E || kind === K ? 0.7 : 0.4);
+          puff(dest, capture ? 0.95 : 0.55);
         }
         if (shade) {
           shade.position.y = 0.02 - pose.hop;
@@ -30984,7 +31027,7 @@ void main() {
           if (u < 0.2) k = u / 0.2;
           else if (u > 0.78) k = Math.max(0, 1 - (u - 0.78) / 0.22);
           else k = 1;
-          fitPad = padHome + 0.02 * k;
+          fitPad = padHome + 0.07 * k;
           applyFit();
         }
         if (capture && !hitSent && u > (cannon ? 0.64 : 0.8)) {
@@ -30996,6 +31039,7 @@ void main() {
       if (body) {
         body.rotation.x = 0;
         body.rotation.z = 0;
+        body.scale.set(1, 1, 1);
       }
       meshPiece.position.copy(dest);
       meshPiece.scale.set(1, 1, 1);
@@ -31146,9 +31190,16 @@ void main() {
       },
       { passive: false }
     );
+    let shake = 0;
+    const shakeOffset = new Vector3();
+    function thud(power) {
+      shake = Math.max(shake, power);
+    }
     function loop(now) {
       const dt = Math.min(0.05, (now - lastTime) / 1e3);
       lastTime = now;
+      camera.position.sub(shakeOffset);
+      shakeOffset.set(0, 0, 0);
       for (let i = jobs.length - 1; i >= 0; i--) {
         const job = jobs[i];
         if (job.cam && job.gen !== camGen) {
@@ -31195,6 +31246,15 @@ void main() {
         const el = parent.matrixWorld.elements;
         card.rotation.order = "YXZ";
         card.rotation.y = worldYaw - Math.atan2(el[8], el[10]);
+      }
+      if (shake > 4e-3) {
+        shakeOffset.set(
+          (Math.random() - 0.5) * shake * 0.2,
+          (Math.random() - 0.5) * shake * 0.08,
+          (Math.random() - 0.5) * shake * 0.14
+        );
+        camera.position.add(shakeOffset);
+        shake *= 0.82;
       }
       renderer.render(scene, camera);
       requestAnimationFrame(loop);
@@ -31741,6 +31801,36 @@ void main() {
     }, 30);
   });
   document.querySelector("#btn-view").addEventListener("click", () => stage.resetView());
+  function openTable() {
+    const titleEl = document.querySelector("#title");
+    if (!titleEl || titleEl.hidden) {
+      document.body.dataset.playing = "1";
+      return;
+    }
+    titleEl.classList.add("leaving");
+    document.body.dataset.playing = "1";
+    window.setTimeout(() => {
+      titleEl.hidden = true;
+    }, 460);
+  }
+  document.querySelector("#title-start").addEventListener("click", () => {
+    silence = true;
+    document.querySelector('input[name=mode][value="xiangqi"]').checked = true;
+    silence = false;
+    openTable();
+    begin(makeMatch());
+  });
+  document.querySelector("#title-dark").addEventListener("click", () => {
+    silence = true;
+    document.querySelector('input[name=mode][value="banqi"]').checked = true;
+    silence = false;
+    openTable();
+    begin(makeMatch());
+  });
+  document.querySelector("#title-resume").addEventListener("click", () => {
+    openTable();
+    continueBtn.click();
+  });
   continueBtn.addEventListener("click", () => {
     try {
       const next = hydrate(JSON.parse(storageGet(SAVE_KEY) || "null"));
@@ -31795,8 +31885,16 @@ void main() {
     stage.setCloseup(optCloseup.checked);
     stage.setSpeed(optFast.checked ? 1.8 : 1);
     stage.setQuality(!optLite.checked);
-    continueBtn.hidden = !storageGet(SAVE_KEY);
-    begin(makeMatch());
+    const saved = !!storageGet(SAVE_KEY);
+    continueBtn.hidden = !saved;
+    const titleResume = document.querySelector("#title-resume");
+    if (titleResume) titleResume.hidden = !saved;
+    const params = new URLSearchParams(location.search);
+    if (params.has("test") || params.has("play")) {
+      document.querySelector("#title").hidden = true;
+      document.body.dataset.playing = "1";
+      begin(makeMatch());
+    }
     document.body.dataset.ready = "1";
     document.getElementById("boot-warn").hidden = true;
   }).catch((error2) => {
